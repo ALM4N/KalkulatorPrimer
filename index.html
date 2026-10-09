@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator sečenja metalnih šipki</title>
+  <link rel="stylesheet" href="stil.css">
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <div class="eyebrow">RADIONICA · PLANIRANJE MATERIJALA</div>
+      <h1>Kalkulator sečenja</h1>
+      <p>Isplaniraj komade iz standardnih metalnih šipki dužine <strong>6 m</strong>, uz što manje ostataka.</p>
+    </header>
+
+    <section class="panel">
+      <h2>Dodaj dimenziju</h2>
+      <form id="unosForma" novalidate>
+        <div class="fields">
+          <label>Dužina komada <span>(cm)</span>
+            <input id="duzina" type="number" min="0.1" step="any" placeholder="npr. 125" required>
+          </label>
+          <label>Količina
+            <input id="kolicina" type="number" min="1" step="1" value="1" required>
+          </label>
+          <button class="button primary" type="submit" id="dodajDugme">＋ Dodaj</button>
+        </div>
+        <p class="hint">Unosi dužine u centimetrima. Šipka je 600 cm, a širina reza je podešena na 0 mm.</p>
+        <p id="poruka" class="message" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div><h2>Lista potrebnih komada</h2><p class="muted">Možeš da izmeniš ili obrišeš svaku stavku.</p></div>
+        <button id="obrisiSve" class="button ghost" type="button">Obriši sve</button>
+      </div>
+      <div id="praznaLista" class="empty">Još nema unetih dimenzija.</div>
+      <div class="table-wrap">
+        <table id="tabelaKomada" hidden>
+          <thead><tr><th>Dužina</th><th>Količina</th><th>Ukupno</th><th>Akcije</th></tr></thead>
+          <tbody id="listaKomada"></tbody>
+        </table>
+      </div>
+      <button id="oslikaj" class="button primary full" type="button">Oslikaj šemu sečenja</button>
+    </section>
+
+    <section id="rezultati" hidden>
+      <div class="stats">
+        <article class="stat"><span>Potrebno šipki</span><strong id="brojSipki">0</strong></article>
+        <article class="stat"><span>Ukupna dužina komada</span><strong id="ukupnaDuzina">0 cm</strong></article>
+        <article class="stat"><span>Ukupni ostatak</span><strong id="ukupniOstatak">0 cm</strong></article>
+        <article class="stat"><span>Iskorišćenost materijala</span><strong id="iskoriscenost">0%</strong></article>
+      </div>
+      <section class="panel">
+        <div class="section-heading">
+          <div><h2>Šema sečenja</h2><p class="muted">Svaka traka predstavlja jednu šipku od 600 cm.</p></div>
+          <button id="stampaj" class="button ghost" type="button">Štampaj / PDF</button>
+        </div>
+        <div id="sema" class="sema"></div>
+      </section>
+      <section class="panel">
+        <h2>Sačuvani ostaci</h2>
+        <p class="muted">Ostaci su prikazani odvojeno kako bi mogli da se iskoriste u sledećem projektu.</p>
+        <div id="ostaci" class="scrap-list"></div>
+        <button id="izvezi" class="button secondary full" type="button">Izvezi plan i ostatke (.json)</button>
+      </section>
+    </section>
+    <footer>Plan je optimizovan heuristički. Za vrlo velike količine može postojati još bolji raspored.</footer>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>
