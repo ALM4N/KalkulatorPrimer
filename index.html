@@ -17,6 +17,24 @@
     <section class="panel">
       <h2>Dodaj dimenziju</h2>
       <form id="unosForma" novalidate>
+        <div class="profile-picker" role="radiogroup" aria-label="Izbor vrste profila">
+          <label class="profile-option">
+            <input type="radio" name="tipProfila" value="krilo" checked>
+            <span class="profile-card">
+              <span class="profile-icon" aria-hidden="true">▱</span>
+              <span class="profile-copy"><strong>Krilo prozora</strong><small>Metalni profil krila</small></span>
+              <span class="profile-check" aria-hidden="true">✓</span>
+            </span>
+          </label>
+          <label class="profile-option">
+            <input type="radio" name="tipProfila" value="stok">
+            <span class="profile-card">
+              <span class="profile-icon" aria-hidden="true">▰</span>
+              <span class="profile-copy"><strong>Štok prozora</strong><small>Metalni profil štoka</small></span>
+              <span class="profile-check" aria-hidden="true">✓</span>
+            </span>
+          </label>
+        </div>
         <div class="fields">
           <label>Dužina komada <span>(cm)</span>
             <input id="duzina" type="number" min="0.1" step="any" placeholder="npr. 125" required>
@@ -39,7 +57,7 @@
       <div id="praznaLista" class="empty">Još nema unetih dimenzija.</div>
       <div class="table-wrap">
         <table id="tabelaKomada" hidden>
-          <thead><tr><th>Dužina</th><th>Količina</th><th>Ukupno</th><th>Akcije</th></tr></thead>
+          <thead><tr><th>Tip profila</th><th>Dužina</th><th>Količina</th><th>Ukupno</th><th>Akcije</th></tr></thead>
           <tbody id="listaKomada"></tbody>
         </table>
       </div>
@@ -55,7 +73,7 @@
       </div>
       <section class="panel">
         <div class="section-heading">
-          <div><h2>Šema sečenja</h2><p class="muted">Svaka traka predstavlja jednu šipku od 600 cm.</p></div>
+          <div><h2>Šema sečenja</h2><p class="muted">Krilo i štok se optimizuju odvojeno. Svaka traka predstavlja šipku od 600 cm.</p></div>
           <button id="stampaj" class="button ghost" type="button">Štampaj / PDF</button>
         </div>
         <div id="sema" class="sema"></div>
