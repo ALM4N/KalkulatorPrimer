@@ -1,10 +1,63 @@
 (() => {
   "use strict";
   const SIPKA_CM = 600;
+  const KLJUC_CUVANJA = "kalkulatorSecenjaOjacanja_v1";
+  const TRAJANJE_CUVANJA = 24 * 60 * 60 * 1000;
+  const PROVERA_ISTEKA_MS = 60 * 1000;
   const $ = id => document.getElementById(id);
-  let stavke = [];
-  let sledeciId = 1;
+  let stavke = ucitajSacuvaneStavke();
+  let sledeciId = stavke.reduce((max, s) => Math.max(max, Number(s.id) || 0), 0) + 1;
   let poslednjiPlan = null;
+
+  // Svaka stavka ima svoj rok od 24 sata od poslednjeg upisa/izmene.
+  // localStorage čuva podatke u ovom pregledaču i na ovom uređaju.
+  function ucitajSacuvaneStavke() {
+    try {
+      const sacuvano = JSON.parse(localStorage.getItem(KLJUC_CUVANJA) || "[]");
+      if (!Array.isArray(sacuvano)) return [];
+      const sada = Date.now();
+      const vazeci = sacuvano.filter(s =>
+        s && Number.isFinite(Number(s.duzina)) && Number(s.duzina) > 0 &&
+        Number.isSafeInteger(Number(s.kolicina)) && Number(s.kolicina) > 0 &&
+        ["krilo", "stok"].includes(s.tip) && ["72", "82"].includes(String(s.ojacanje)) &&
+        Number.isFinite(Number(s.vremeUpisa)) && sada - Number(s.vremeUpisa) < TRAJANJE_CUVANJA
+      ).map(s => ({
+        id: Number(s.id) || 0,
+        duzina: Number(s.duzina),
+        kolicina: Number(s.kolicina),
+        tip: s.tip,
+        ojacanje: String(s.ojacanje),
+        vremeUpisa: Number(s.vremeUpisa)
+      }));
+      localStorage.setItem(KLJUC_CUVANJA, JSON.stringify(vazeci));
+      return vazeci;
+    } catch (error) {
+      console.warn("Sačuvane mere nisu mogle biti učitane.", error);
+      return [];
+    }
+  }
+  function sacuvajStavke() {
+    try {
+      localStorage.setItem(KLJUC_CUVANJA, JSON.stringify(stavke));
+      return true;
+    } catch (error) {
+      porukaPrikazi("Pregledač nije uspeo da sačuva mere. Proveri podešavanja skladištenja.");
+      console.warn("Mere nisu mogle biti sačuvane.", error);
+      return false;
+    }
+  }
+  function ocistiIstekleStavke(prikaziPoruku = false) {
+    const sada = Date.now();
+    const pre = stavke.length;
+    stavke = stavke.filter(s => sada - Number(s.vremeUpisa || 0) < TRAJANJE_CUVANJA);
+    if (stavke.length !== pre) {
+      invalidatePlan();
+      sacuvajStavke();
+      osveziListu();
+      if (!stavke.length) $("rezultati").hidden = true;
+      if (prikaziPoruku) porukaPrikazi(`Automatski obrisano ${pre - stavke.length} stavki starijih od 24 sata.`, true);
+    }
+  }
 
   const forma = $("unosForma");
   const duzinaInput = $("duzina");
@@ -47,7 +100,7 @@
         if (!Number.isFinite(value) || value <= 0 || value > SIPKA_CM) {
           porukaPrikazi("Dužina mora biti veća od 0 i najviše 600 cm."); inputD.value = stavka.duzina; return;
         }
-        stavka.duzina = value; invalidatePlan(); porukaPrikazi("Dužina je izmenjena. Ponovo oslikaj plan.", true); osveziListu();
+        stavka.duzina = value; stavka.vremeUpisa = Date.now(); invalidatePlan(); sacuvajStavke(); porukaPrikazi("Dužina je izmenjena i sačuvana na 24 sata. Ponovo oslikaj plan.", true); osveziListu();
       });
       tdD.append(inputD);
       const tdK = document.createElement("td");
@@ -61,14 +114,14 @@
         }
         const otherCount = stavke.filter(s => s.id !== stavka.id && s.tip === stavka.tip && s.ojacanje === stavka.ojacanje && Math.abs(s.duzina - stavka.duzina) < 1e-9).reduce((sum, s) => sum + s.kolicina, 0);
         if (otherCount + value > 100000) { porukaPrikazi("Ukupna količina za ovu dimenziju ne može biti veća od 100000."); inputK.value = stavka.kolicina; return; }
-        stavka.kolicina = value; invalidatePlan(); porukaPrikazi("Količina je izmenjena. Ponovo oslikaj plan.", true); osveziListu();
+        stavka.kolicina = value; stavka.vremeUpisa = Date.now(); invalidatePlan(); sacuvajStavke(); porukaPrikazi("Količina je izmenjena i sačuvana na 24 sata. Ponovo oslikaj plan.", true); osveziListu();
       });
       tdK.append(inputK);
       const tdUk = document.createElement("td"); tdUk.textContent = cm(stavka.duzina * stavka.kolicina);
       const tdA = document.createElement("td"); const actions = document.createElement("div"); actions.className = "actions";
       const btnBrisi = document.createElement("button"); btnBrisi.className = "small-btn delete"; btnBrisi.type = "button"; btnBrisi.textContent = "Obriši";
       btnBrisi.setAttribute("aria-label", `Obriši stavku ${nazivTipa(stavka.tip)}, ojačanje ${stavka.ojacanje} mm, ${cm(stavka.duzina)}`);
-      btnBrisi.addEventListener("click", () => { stavke = stavke.filter(s => s.id !== stavka.id); invalidatePlan(); osveziListu(); porukaPrikazi("Stavka je obrisana.", true); });
+      btnBrisi.addEventListener("click", () => { stavke = stavke.filter(s => s.id !== stavka.id); invalidatePlan(); sacuvajStavke(); osveziListu(); porukaPrikazi("Stavka je obrisana.", true); });
       actions.append(btnBrisi); tdA.append(actions); tr.append(tdTip, tdD, tdK, tdUk, tdA); telo.append(tr);
     });
   }
@@ -87,16 +140,17 @@
     if (existing) {
       if (existing.kolicina + kolicina > 100000) { porukaPrikazi("Ukupna količina za ovu dimenziju ne može biti veća od 100000."); return; }
       existing.kolicina += kolicina;
-    } else stavke.push({ id: sledeciId++, duzina, kolicina, tip, ojacanje });
-    invalidatePlan(); osveziListu();
-    porukaPrikazi(`Dodato: ${kolicina} × ${cm(duzina)} · ${nazivTipa(tip)} · ojačanje ${ojacanje} mm.`, true);
+      existing.vremeUpisa = Date.now();
+    } else stavke.push({ id: sledeciId++, duzina, kolicina, tip, ojacanje, vremeUpisa: Date.now() });
+    invalidatePlan(); sacuvajStavke(); osveziListu();
+    porukaPrikazi(`Dodato: ${kolicina} × ${cm(duzina)} · ${nazivTipa(tip)} · ojačanje ${ojacanje} mm. Sačuvano 24 sata.`, true);
     duzinaInput.value = ""; kolicinaInput.value = "1"; duzinaInput.focus();
   });
 
   $("obrisiSve").addEventListener("click", () => {
     if (!stavke.length) return;
     if (!confirm("Obrisati sve unete dimenzije?")) return;
-    stavke = []; invalidatePlan(); osveziListu(); $("rezultati").hidden = true; porukaPrikazi("Lista je ispražnjena.", true);
+    stavke = []; invalidatePlan(); sacuvajStavke(); osveziListu(); $("rezultati").hidden = true; porukaPrikazi("Sve mere su obrisane i iz memorije pregledača.", true);
   });
 
   // Optimizes each distinct profile/reinforcement combination separately so
@@ -185,4 +239,21 @@
     const a = document.createElement("a"); a.href=url; a.download="plan-secenja.json"; document.body.append(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   });
   osveziListu();
+  if (stavke.length) {
+    porukaPrikazi(`Učitano ${stavke.length} sačuvanih stavki. Svaka se automatski briše 24 sata nakon upisa.`, true);
+  }
+  // Proverava rok i dok je aplikacija otvorena, kao i pri povratku u karticu.
+  window.setInterval(() => ocistiIstekleStavke(true), PROVERA_ISTEKA_MS);
+  window.addEventListener("focus", () => ocistiIstekleStavke(true));
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) ocistiIstekleStavke(true);
+  });
+  window.addEventListener("storage", event => {
+    if (event.key === KLJUC_CUVANJA) {
+      stavke = ucitajSacuvaneStavke();
+      sledeciId = stavke.reduce((max, s) => Math.max(max, Number(s.id) || 0), 0) + 1;
+      invalidatePlan(); osveziListu();
+      if (!stavke.length) $("rezultati").hidden = true;
+    }
+  });
 })();
