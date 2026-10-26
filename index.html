@@ -35,6 +35,18 @@
             </span>
           </label>
         </div>
+        <div class="reinforcement-section">
+          <p class="choice-title">Dimenzija ojačanja za krilo</p>
+          <div class="size-picker" id="velicinaKrilo" role="radiogroup" aria-label="Dimenzija ojačanja za krilo">
+            <label class="size-option"><input type="radio" name="ojacanjeKrilo" value="82" checked><span class="size-card"><strong>82 mm</strong><small>Ojačanje krila</small><span class="size-check">✓</span></span></label>
+            <label class="size-option"><input type="radio" name="ojacanjeKrilo" value="72"><span class="size-card"><strong>72 mm</strong><small>Ojačanje krila</small><span class="size-check">✓</span></span></label>
+          </div>
+          <p class="choice-title stock-title">Dimenzija ojačanja za štok</p>
+          <div class="size-picker" id="velicinaStok" role="radiogroup" aria-label="Dimenzija ojačanja za štok" hidden>
+            <label class="size-option"><input type="radio" name="ojacanjeStok" value="82" checked><span class="size-card"><strong>82 mm</strong><small>Ojačanje štoka</small><span class="size-check">✓</span></span></label>
+            <label class="size-option"><input type="radio" name="ojacanjeStok" value="72"><span class="size-card"><strong>72 mm</strong><small>Ojačanje štoka</small><span class="size-check">✓</span></span></label>
+          </div>
+        </div>
         <div class="fields">
           <label>Dužina komada <span>(cm)</span>
             <input id="duzina" type="number" min="0.1" step="any" placeholder="npr. 125" required>
